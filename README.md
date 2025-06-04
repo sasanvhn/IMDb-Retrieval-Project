@@ -1,23 +1,5 @@
-# IMDb-Retrieval-Project
-IMDb Information Retrieval System
-This project uses the IMDb reviews dataset to explore Information Retrieval (IR) techniques. It demonstrates indexing, retrieval, and preprocessing workflows and compares the effectiveness of different retrieval models and text preprocessing methods.
+The notebook walks through a lightweight information-retrieval workflow built around the publicly available IMDB movie-review dataset (`stanfordnlp/imdb`). We start with a plain-English query—“A touching story about friendship and loyalty.” Using a TF-IDF vectorizer from scikit-learn, we pull the top 10 reviews most similar to that query.
 
-Features
-Dataset: A subset of IMDb reviews is used to index and query textual data.
-Indexing: Efficient document indexing using PyTerrier.
-Retrieval Models:
-BM25: A probabilistic ranking model.
-TF-IDF: A classic term-based ranking approach.
-Text Preprocessing:
-Porter and Snowball stemming are applied to reduce words to their base forms.
-Query Evaluation: A sample query is executed across four configurations to compare retrieval effectiveness.
-How It Works
-Dataset Loading: IMDb reviews are loaded, and a subset of 2000 documents is prepared for processing.
-Index Creation: Documents are indexed using PyTerrier, with separate indexes for stemmed and unstemmed text.
-Retrieval Models: BM25 and TF-IDF are applied to rank documents based on the query.
-Result Analysis: Rankings are analyzed across combinations of retrieval models and stemming methods.
-Technologies Used
-Python: For scripting and data handling.
-PyTerrier: For indexing and retrieval.
-NLTK: For text stemming.
-Hugging Face Datasets: This is used to load the IMDb reviews dataset.
+These ten texts are embedded with **E5-Mistral-7B** (4 096-dim vectors) via GWDG’s SAIA OpenAI-compatible API, giving us dense representations that let us measure true semantic closeness with cosine similarity and highlight where TF-IDF has mis-ranked items. On top of this retrieval layer, we add three LLM-based evaluation steps, all served by the same SAIA endpoint. **Head-to-head check:** the model tells us which of the first two hits is more relevant. **Pairwise audit:** for every one of the 45 (H, L) combinations among the ten docs, the LLM answers “yes” or “no” to whether the higher-ranked doc deserves its place. **Block re-ranking:** we split the ten docs into two sets of five and ask the LLM to output the ideal ordering inside each block, yielding an LLM-guided re-rank.
+
+All moving parts are encapsulated in short, reusable helper functions—`search()` for TF-IDF, `embed_saia()` for the `/embeddings` route, and `ask_llm()` for the `/chat/completions` route—kept in `src/helpers.py` for clarity. Secrets are loaded from environment variables (`SAIA_API_KEY`, `SAIA_BASE_URL`), so no key appears in code or version control. With only `datasets`, `sentence-transformers`, `scikit-learn`, and `requests`, the whole pipeline runs in under a minute on Colab, illustrating how classic IR, modern embeddings, and LLM reasoning can be chained together to diagnose and improve ranking quality.
